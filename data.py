@@ -126,8 +126,10 @@ def get_dataloader(root_dir, annotation_file, transform, batch_size, shuffle=Tru
         
         
         
-        
-        
+def save_checkpoint(state, filename="my_checkpoint.pt"):
+    print("=> Saving checkpoint")
+    torch.save(state, filename)        
+
         
         
         

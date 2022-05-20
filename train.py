@@ -11,7 +11,7 @@ from omegaconf import OmegaConf
 from argparse import ArgumentParser
 from torch.utils.tensorboard import SummaryWriter
 
-from data import FlickerDataset, get_dataloader, collate_fn
+from data import FlickerDataset, get_dataloader, collate_fn, save_checkpoint
 from model import EncoderCNN, DecoderRNN, CNNtoRNN
 
 
@@ -38,6 +38,8 @@ def train_fn(root_dir, annotation_file):
     learning_rate = 0.001
     epochs = 5
     
+    save_model = True
+    
     writer = SummaryWriter("runs/Flicker")
     step = 0
     
@@ -55,6 +57,14 @@ def train_fn(root_dir, annotation_file):
             
     
     for epoch in range(epochs):
+        
+        if save_model:
+            checkpoint = {
+                "state_dict": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "step": step,
+            }
+            save_checkpoint(checkpoint)
         
         for idx,(images, captions) in tqdm(enumerate(train_dataloader), total = len(train_dataloader)):
             images = images
@@ -77,7 +87,7 @@ def train_fn(root_dir, annotation_file):
 
 if __name__ == '__main__':
     
-    train_fn("/home/boltzmann/space/Sanketh/Image-Captioning/flickr8k/images","/home/boltzmann/space/Sanketh/Image-Captioning/flickr8k/captions.txt")
+    train_fn("Sanketh/Image-Captioning/flickr8k/images","Sanketh/Image-Captioning/flickr8k/captions.txt")
             
             
             
