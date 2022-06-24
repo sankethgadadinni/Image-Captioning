@@ -8,14 +8,13 @@ import torchvision.models as models
 
 
 class EncoderCNN(nn.Module):
-    def __init__(self, embedding_size, train_CNN = False):
+    def __init__(self, embedding_size):
         super(EncoderCNN, self).__init__()
         
         self.embedding_size = embedding_size
-        self.train_CNN = train_CNN
         
         self.inception = models.inception_v3(pretrained=True, aux_logits = False)
-        self.inception.fc = nn.Linear(self.inception.fc.in_features, embedding_size)
+        self.inception.fc = nn.Linear(self.inception.fc.in_features, embedding_size)    #in_features = 2048
         
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.5)
@@ -23,7 +22,9 @@ class EncoderCNN(nn.Module):
         
     def forward(self, images):
         
+        # images shape :: [batch size, channels, height, width]
         features = self.inception(images)
+        #features shape :: [batch size, embedding size]
         features = self.dropout(self.relu(features))
         
         return features
@@ -47,9 +48,16 @@ class DecoderRNN(nn.Module):
     
     def forward(self, features, captions):
         
+        # features shape :: [batch size, embedding size]
         embeddings = self.dropout(self.embedding(captions))
+
+        # embeeding shape :: [seq_length, batch size, embeeding size]
         embeddings = torch.cat((features.unsqueeze(0), embeddings), dim=0)
+
+        #h hiddens shape :: [seq length, batch size, hidden size]
         hiddens, _ = self.lstm(embeddings)
+
+        # outputs shape :: [seq length, batch size, vocab size]
         outputs = self.linear(hiddens)
         
         return outputs
@@ -77,15 +85,17 @@ class CNNtoRNN(nn.Module):
         return outputs
     
 
-    def caption_image(self, image, vocabulary, max_length=100):
+    def caption_image(self, image, vocab, device, max_length=50):
         result_caption = []
         
         with torch.no_grad():
+            image = image.unsqueeze(0)
+            image = image.to(device)
             x = self.encoder(image)
             x = x.unsqueeze(0)
-            
+
             states = None
-            
+                        
             for i in range(max_length):
                 
                 hiddens, states = self.decoder.lstm(x, states)
@@ -96,11 +106,14 @@ class CNNtoRNN(nn.Module):
                 
                 x = self.decoder.embedding(predicted).unsqueeze(0)
                 
-                if vocabulary.itos[predicted.item()] == 'EOS':
+                if vocab.itos[predicted.item()] == '<EOS>':
                     break
                 
-            caption = [vocabulary.itos[x] for x in result_caption]
-            
+            caption = [vocab.itos[x] for x in result_caption]
+            caption = ' '.join([id for id in caption])
+
+            caption = caption[6:-6]
+
         return caption
                 
         

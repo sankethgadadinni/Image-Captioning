@@ -8,15 +8,16 @@ import torchvision.transforms as transforms
 from torch.nn.utils.rnn import pad_sequence  # pad batch
 import pandas as pd
 
+
 spacy_eng = spacy.load("en")
 
 
 class Vocabulary:
+
     def __init__(self, freq_threshold):
         
         self.freq_threshold = freq_threshold
 
-                
         self.itos = {0:"<PAD>", 1:"<SOS>", 2:"<EOS>", 3:"<UNK>"}
         self.stoi = {"<PAD>":0,"<SOS>":1, "<EOS>":2, "<UNK>":3}
         
@@ -71,6 +72,8 @@ class FlickerDataset(Dataset):
         
         self.vocab = Vocabulary(freq_threshold=freq_threshold)
         self.vocab.build_vocabulary(self.captions.tolist())
+
+        torch.save(self.vocab, 'vocab.pt')
         
     
     def __len__(self):
